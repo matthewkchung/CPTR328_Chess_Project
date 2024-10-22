@@ -14,6 +14,12 @@ public class ChessClient
         game = new ChessGame();
     }
 
+    private void PrintBoard()
+    {
+        var board = game.GetBoard();
+        ChessUtilities.PrintBoard(board);
+    }
+
     private bool TryMakeMove(string from, string to, Player player)
     {
         try
@@ -115,35 +121,5 @@ public class ChessClient
         }
     }
 
-
-    private void PrintBoard()
-    {
-        var board = game.GetBoard();
-        Console.WriteLine("   A B C D E F G H");
-        Console.WriteLine("   ---------------");
-        for (int rank = 7; rank >= 0; rank--)
-        {
-            Console.Write($"{rank + 1}| ");
-            for (int file = 0; file < 8; file++)
-            {
-                int index = (rank * 8) + file;
-                var piece = board[file][rank]; // Adjusting the indexing based on how GetBoard() is structured
-                char pieceChar = '.';
-
-                if (piece != null)
-                {
-                    // Get the appropriate character based on piece type
-                    if (piece is Pawn) pieceChar = 'P';
-                    else if (piece is Rook) pieceChar = 'R';
-                    else if (piece is Knight) pieceChar = 'N';
-                    else if (piece is Bishop) pieceChar = 'B';
-                    else if (piece is Queen) pieceChar = 'Q';
-                    else if (piece is King) pieceChar = 'K';
-                }
-                Console.Write($"{pieceChar} ");
-            }
-            Console.WriteLine();
-        }
-    }
 
 }

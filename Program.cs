@@ -115,8 +115,7 @@ public class ChessServer
             Console.Write($"{rank + 1}| ");
             for (int file = 0; file < 8; file++)
             {
-                int index = (rank * 8) + file;
-                var piece = board[index]; // Adjusting the indexing based on how GetBoard() is structured
+                var piece = board[file][rank]; // Adjusting the indexing based on how GetBoard() is structured
                 char pieceChar = '.';
 
                 if (piece != null)
@@ -241,7 +240,7 @@ public class ChessClient
             for (int file = 0; file < 8; file++)
             {
                 int index = (rank * 8) + file;
-                var piece = board[index]; // Adjusting the indexing based on how GetBoard() is structured
+                var piece = board[file][rank]; // Adjusting the indexing based on how GetBoard() is structured
                 char pieceChar = '.';
 
                 if (piece != null)

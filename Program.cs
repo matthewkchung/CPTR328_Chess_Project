@@ -31,14 +31,17 @@ public class ChessServer
     {
         try
         {
-            // Convert string positions to Position objects
+            // Check if it's the right player's turn
+            if (game.WhoseTurn != player)
+            {
+                Console.WriteLine("It's not your turn!");
+                return false;
+            }
+
             Position originalPosition = new Position(from);
             Position newPosition = new Position(to);
-
-            // Create the move
             Move move = new Move(originalPosition, newPosition, player);
 
-            // Check if move is valid
             if (game.IsValidMove(move))
             {
                 game.MakeMove(move, true);
@@ -52,6 +55,9 @@ public class ChessServer
         }
     }
 
+
+
+
     public async Task StartServer()
     {
         server = new TcpListener(IPAddress.Any, PORT);
@@ -64,37 +70,68 @@ public class ChessServer
         {
             Console.WriteLine("Opponent connected!");
 
-            byte[] buffer = new byte[1024];
+            Player currentTurn = Player.White; // White starts the game
+
             while (true)
             {
                 try
                 {
-                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    if (bytesRead == 0) break;
-
-                    string moveData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    ChessMove move = JsonConvert.DeserializeObject<ChessMove>(moveData);
-
-                    // Attempt to make move
-                    if (TryMakeMove(move.From, move.To, game.WhoseTurn))
+                    // Only allow the host (White) to make the first move
+                    if (game.WhoseTurn == Player.White)
                     {
-                        Console.WriteLine($"Move made: {move.From} to {move.To}");
-                        PrintBoard();
+                        Console.WriteLine("Your move (White): ");
+                        string moveInput = Console.ReadLine();
+
+                        string[] moveParts = moveInput.Split(' ');
+                        if (moveParts.Length != 2)
+                        {
+                            Console.WriteLine("Invalid input. Format: 'from to'");
+                            continue;
+                        }
+
+                        // Process the move
+                        if (TryMakeMove(moveParts[0], moveParts[1], Player.White))
+                        {
+                            PrintBoard();
+
+                            // Send the move to the client (Black)
+                            ChessMove move = new ChessMove { From = moveParts[0], To = moveParts[1] };
+                            string moveData = JsonConvert.SerializeObject(move);
+                            byte[] moveBytes = Encoding.UTF8.GetBytes(moveData);
+                            await stream.WriteAsync(moveBytes, 0, moveBytes.Length);
+
+                            // Switch to Black's turn
+                            currentTurn = Player.Black;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid move!");
+                        }
                     }
                     else
                     {
-                        Console.WriteLine("Invalid move!");
+                        // Receive move from the client (Black)
+                        byte[] buffer = new byte[1024];
+                        int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                        if (bytesRead == 0) break; // Connection closed
+
+                        string moveData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        ChessMove receivedMove = JsonConvert.DeserializeObject<ChessMove>(moveData);
+
+                        // Apply the client's move (Black)
+                        if (TryMakeMove(receivedMove.From, receivedMove.To, Player.Black))
+                        {
+                            Console.WriteLine($"Opponent moved: {receivedMove.From} to {receivedMove.To}");
+                            PrintBoard();
+
+                            // Switch back to White's turn
+                            currentTurn = Player.White;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid move received from opponent!");
+                        }
                     }
-
-                    // Send updated game state
-                    ChessMove response = new ChessMove
-                    {
-                        FEN = game.GetFen()
-                    };
-
-                    string responseData = JsonConvert.SerializeObject(response);
-                    byte[] responseBuffer = Encoding.UTF8.GetBytes(responseData);
-                    await stream.WriteAsync(responseBuffer, 0, responseBuffer.Length);
                 }
                 catch (Exception ex)
                 {
@@ -104,6 +141,8 @@ public class ChessServer
             }
         }
     }
+
+
 
     private void PrintBoard()
     {
@@ -181,45 +220,65 @@ public class ChessClient
 
             using (NetworkStream stream = client.GetStream())
             {
+                Player currentTurn = Player.Black; // The client is Black
+
                 while (true)
                 {
-                    // Get move from player
-                    Console.Write("Enter move (e.g., e2 e4): ");
-                    string moveInput = Console.ReadLine();
-
-                    string[] moveParts = moveInput.Split(' ');
-                    if (moveParts.Length != 2)
+                    if (game.WhoseTurn == Player.White)
                     {
-                        Console.WriteLine("Invalid move format. Use 'from to' (e.g., 'e2 e4')");
-                        continue;
-                    }
-
-                    if (TryMakeMove(moveParts[0], moveParts[1], game.WhoseTurn))
-                    {
-                        ChessMove move = new ChessMove
-                        {
-                            From = moveParts[0],
-                            To = moveParts[1]
-                        };
-
-                        // Send move to server
-                        string moveData = JsonConvert.SerializeObject(move);
-                        byte[] buffer = Encoding.UTF8.GetBytes(moveData);
-                        await stream.WriteAsync(buffer, 0, buffer.Length);
-
-                        // Receive response
-                        buffer = new byte[1024];
+                        // Wait for the server's (White) move
+                        byte[] buffer = new byte[1024];
                         int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                        string responseData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                        ChessMove response = JsonConvert.DeserializeObject<ChessMove>(responseData);
+                        if (bytesRead == 0) break; // Connection closed
 
-                        // Update local game state
-                        game = new ChessGame(response.FEN);
-                        PrintBoard();
+                        string moveData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        ChessMove receivedMove = JsonConvert.DeserializeObject<ChessMove>(moveData);
+
+                        // Apply the move from White
+                        if (TryMakeMove(receivedMove.From, receivedMove.To, Player.White))
+                        {
+                            Console.WriteLine($"Opponent moved: {receivedMove.From} to {receivedMove.To}");
+                            PrintBoard();
+
+                            // Now it's Black's turn
+                            currentTurn = Player.Black;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid move received from opponent!");
+                        }
                     }
                     else
                     {
-                        Console.WriteLine("Invalid move!");
+                        // Black's turn to move
+                        Console.WriteLine("Your move (Black): ");
+                        string moveInput = Console.ReadLine();
+
+                        string[] moveParts = moveInput.Split(' ');
+                        if (moveParts.Length != 2)
+                        {
+                            Console.WriteLine("Invalid input. Format: 'from to'");
+                            continue;
+                        }
+
+                        // Process the move
+                        if (TryMakeMove(moveParts[0], moveParts[1], Player.Black))
+                        {
+                            PrintBoard();
+
+                            // Send the move to the server (White)
+                            ChessMove move = new ChessMove { From = moveParts[0], To = moveParts[1] };
+                            string moveData = JsonConvert.SerializeObject(move);
+                            byte[] moveBytes = Encoding.UTF8.GetBytes(moveData);
+                            await stream.WriteAsync(moveBytes, 0, moveBytes.Length);
+
+                            // Switch back to White's turn
+                            currentTurn = Player.White;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid move!");
+                        }
                     }
                 }
             }
@@ -229,6 +288,8 @@ public class ChessClient
             Console.WriteLine($"Error: {ex.Message}");
         }
     }
+
+
     private void PrintBoard()
     {
         var board = game.GetBoard();
@@ -252,9 +313,6 @@ public class ChessClient
                     else if (piece is Bishop) pieceChar = 'B';
                     else if (piece is Queen) pieceChar = 'Q';
                     else if (piece is King) pieceChar = 'K';
-
-                    // You can add further checks here if you have some way to determine the color of the piece,
-                    // but since piece.Owner is not working, you might want to assume a default color.
                 }
                 Console.Write($"{pieceChar} ");
             }

@@ -85,25 +85,34 @@ public class ChessClient
                         // Black's turn to move
                         Console.WriteLine("Your move (Black): ");
                         string moveInput = Console.ReadLine();
+                        string from = "";
+                        string to = "";
+                        bool isCastling = false;
+
+                        // First, check if it is castles short
+                        if (moveInput == "O-O")
+                        {
+                            isCastling = true;
+                            Console.WriteLine("Castling short...");
+                            from = "e8";
+                            to = "g8";
+                        }
 
                         string[] moveParts = moveInput.Split(' ');
-                        if (moveParts.Length != 2)
+                        if (moveParts.Length != 2 && !isCastling)
                         {
                             Console.WriteLine("Invalid input. Format: 'from to'");
                             continue;
                         }
 
-                        string from;
-                        string to;
-
                         // If it is a pawn move
-                        if (moveParts[1].Length == 2) 
+                        if (moveParts[1].Length == 2)
                         {
                             from = moveParts[0];
                             to = moveParts[1];
                         }
 
-                        else // It is moving a "piece"
+                        else if (moveParts[1].Length != 2 && !isCastling) // It is moving a "piece"
                         {
                             // Split the move into the piece + the position
                             char movingPiece = moveParts[0][0];
@@ -113,8 +122,8 @@ public class ChessClient
                             Console.WriteLine($"Moving Piece Type: {movingPiece}, Original Position: {from}, New Position: {to}");
                         }
 
-                            // Process the move
-                            if (TryMakeMove(from, to, Player.Black))
+                        // Process the move
+                        if (TryMakeMove(from, to, Player.Black))
                         {
                             PrintBoard();
 

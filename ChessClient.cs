@@ -53,8 +53,9 @@ public class ChessClient
             using (NetworkStream stream = client.GetStream())
             {
                 Player currentTurn = Player.Black; // The client is Black
+                bool gameActive = true;
 
-                while (true)
+                while (gameActive)
                 {
                     if (game.WhoseTurn == Player.White)
                     {
@@ -82,6 +83,19 @@ public class ChessClient
                     }
                     else
                     {
+
+                        // If the last move resulted in the game ending
+                        if (ChessUtilities.IsGameOver(game))
+                        {
+                            // Display that the game is over
+                            Console.WriteLine("Game over. Please close the application");
+
+                            // Break out of the while loop
+                            gameActive = false;
+                            continue; // Skip the rest of the loop
+
+                        }
+
                         // Black's turn to move
                         Console.WriteLine("Your move (Black): ");
                         string moveInput = Console.ReadLine();
@@ -98,6 +112,7 @@ public class ChessClient
                             to = "g8";
                         }
 
+                        // Check if it is castles long
                         else if (moveInput == "O-O-O")
                         {
                             isCastling = true;
@@ -106,31 +121,35 @@ public class ChessClient
                             to = "c8";
                         }
 
-                        string[] moveParts = moveInput.Split(' ');
-                        if (moveParts.Length != 2 && !isCastling)
+                        // Now, if castling has already been processed, we skip the move parsing logic
+                        if (!isCastling)
                         {
-                            Console.WriteLine("Invalid input. Format: 'from to'");
-                            continue;
+                            // Parse non-castling moves
+                            string[] moveParts = moveInput.Split(' ');
+                            if (moveParts.Length != 2)
+                            {
+                                Console.WriteLine("Invalid input. Format: 'from to'");
+                                continue;
+                            }
+
+                            // If it is a pawn move
+                            if (moveParts[1].Length == 2)
+                            {
+                                from = moveParts[0];
+                                to = moveParts[1];
+                            }
+                            else // It is moving a "piece"
+                            {
+                                // Split the move into the piece + the position
+                                char movingPiece = moveParts[0][0];
+                                from = moveParts[0].Substring(1); // Get the rest for original position
+                                to = moveParts[1].Substring(1);   // Get the position for destination
+
+                                Console.WriteLine($"Moving Piece Type: {movingPiece}, Original Position: {from}, New Position: {to}");
+                            }
                         }
 
-                        // If it is a pawn move
-                        if (moveParts[1].Length == 2)
-                        {
-                            from = moveParts[0];
-                            to = moveParts[1];
-                        }
-
-                        else if (moveParts[1].Length != 2 && !isCastling) // It is moving a "piece"
-                        {
-                            // Split the move into the piece + the position
-                            char movingPiece = moveParts[0][0];
-                            from = moveParts[0].Substring(1); // Get the rest for og position
-                            to = moveParts[1].Substring(1); // Get the position for dest position
-
-                            Console.WriteLine($"Moving Piece Type: {movingPiece}, Original Position: {from}, New Position: {to}");
-                        }
-
-                        // Process the move
+                        // Process the move, whether it's castling or a regular move
                         if (TryMakeMove(from, to, Player.Black))
                         {
                             PrintBoard();
@@ -148,6 +167,7 @@ public class ChessClient
                         {
                             Console.WriteLine("Invalid move!");
                         }
+
                     }
                 }
             }

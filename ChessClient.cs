@@ -93,13 +93,33 @@ public class ChessClient
                             continue;
                         }
 
-                        // Process the move
-                        if (TryMakeMove(moveParts[0], moveParts[1], Player.Black))
+                        string from;
+                        string to;
+
+                        // If it is a pawn move
+                        if (moveParts[1].Length == 2) 
+                        {
+                            from = moveParts[0];
+                            to = moveParts[1];
+                        }
+
+                        else // It is moving a "piece"
+                        {
+                            // Split the move into the piece + the position
+                            char movingPiece = moveParts[0][0];
+                            from = moveParts[0].Substring(1); // Get the rest for og position
+                            to = moveParts[1].Substring(1); // Get the position for dest position
+
+                            Console.WriteLine($"Moving Piece Type: {movingPiece}, Original Position: {from}, New Position: {to}");
+                        }
+
+                            // Process the move
+                            if (TryMakeMove(from, to, Player.Black))
                         {
                             PrintBoard();
 
                             // Send the move to the server (White)
-                            ChessMove move = new ChessMove { From = moveParts[0], To = moveParts[1] };
+                            ChessMove move = new ChessMove { From = from, To = to };
                             string moveData = JsonConvert.SerializeObject(move);
                             byte[] moveBytes = Encoding.UTF8.GetBytes(moveData);
                             await stream.WriteAsync(moveBytes, 0, moveBytes.Length);

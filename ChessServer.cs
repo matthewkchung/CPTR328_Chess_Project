@@ -83,6 +83,16 @@ public class ChessServer
                             to = "g1";
                         }
 
+                        // Next, check if it is castles long
+                        else if (moveInput == "O-O-O")
+                        {
+                            isCastling = true;
+                            Console.WriteLine("Castling long...");
+                            from = "e1";
+                            to = "c1";
+
+                        }
+
                         string[] moveParts = moveInput.Split(' ');
                         if (moveParts.Length != 2 && !isCastling)
                         {

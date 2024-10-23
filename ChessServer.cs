@@ -70,29 +70,34 @@ public class ChessServer
                     {
                         Console.WriteLine("Your move (White): ");
                         string moveInput = Console.ReadLine();
+                        string from = "";
+                        string to = "";
+                        bool isCastling = false;
+
+                        // First, check if it is castles short
+                        if (moveInput == "O-O")
+                        {
+                            isCastling = true;
+                            Console.WriteLine("Castling short...");
+                            from = "e1";
+                            to = "g1";
+                        }
 
                         string[] moveParts = moveInput.Split(' ');
-                        if (moveParts.Length != 2)
+                        if (moveParts.Length != 2 && !isCastling)
                         {
-                            Console.WriteLine("Invalid input. Format: 'from to'");
+                            Console.WriteLine("Invalid input. Format: 'from to': ex. e2 e4");
                             continue;
                         }
 
-                        string from;
-                        string to;
-
                         // If it is a pawn move
-                        if (moveParts[0].StartsWith("a") || moveParts[0].StartsWith("b") ||
-                            moveParts[0].StartsWith("c") || moveParts[0].StartsWith("d") ||
-                            moveParts[0].StartsWith("e") || moveParts[0].StartsWith("f") ||
-                            moveParts[0].StartsWith("g") || moveParts[0].StartsWith("h")
-                            )
+                        if (moveParts[0].Length == 2)
                         {
                             from = moveParts[0];
                             to = moveParts[1];
                         }
 
-                        else // If it is moving a "piece"
+                        else if (moveParts[0].Length != 2 && !isCastling)// If it is moving a "piece"
                         {
                             // Split the move into the piece + the position
                             char movingPiece = moveParts[0][0];

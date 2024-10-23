@@ -98,6 +98,14 @@ public class ChessClient
                             to = "g8";
                         }
 
+                        else if (moveInput == "O-O-O")
+                        {
+                            isCastling = true;
+                            Console.WriteLine("Castling long...");
+                            from = "e8";
+                            to = "c8";
+                        }
+
                         string[] moveParts = moveInput.Split(' ');
                         if (moveParts.Length != 2 && !isCastling)
                         {

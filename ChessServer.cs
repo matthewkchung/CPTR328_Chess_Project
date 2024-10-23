@@ -61,13 +61,28 @@ public class ChessServer
 
             Player currentTurn = Player.White; // White starts the game
 
-            while (true)
+            bool gameActive = true;
+
+            while (gameActive)
             {
                 try
                 {
                     // Only allow the host (White) to make the first move
                     if (game.WhoseTurn == Player.White)
                     {
+
+                        // If the last move resulted in the game ending
+                        if (ChessUtilities.IsGameOver(game))
+                        {
+                            // Display that the game is over
+                            Console.WriteLine("Game over. Please close the application");
+
+                            // Break out of the while loop
+                            gameActive = false;
+                            continue; // Skip the rest of the loop
+
+                        }
+
                         Console.WriteLine("Your move (White): ");
                         string moveInput = Console.ReadLine();
                         string from = "";

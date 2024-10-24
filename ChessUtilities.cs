@@ -1,7 +1,6 @@
 // ChessUtilities.cs
 using ChessDotNet.Pieces;
 using ChessDotNet;
-
 public static class ChessUtilities
 {
     public static void PrintBoard(Piece[][] board)
@@ -38,4 +37,24 @@ public static class ChessUtilities
         }
         Console.WriteLine(); // Add an extra line for better readability
     }
+
+    public static bool IsGameOver(ChessGame game)
+    {
+        Player currentPlayer = game.WhoseTurn;
+
+        // Check if the current player is checkmated
+        if (game.IsCheckmated(currentPlayer))
+        {
+            Console.WriteLine($"{currentPlayer} is checkmated! Game over.");
+            return true;
+        }
+        else if (game.IsStalemated(currentPlayer))
+        {
+            Console.WriteLine($"{currentPlayer} is stalemated! Game over.");
+            return true;
+        }
+        return false;
+    }
+
+
 }
